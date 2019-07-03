@@ -35,6 +35,7 @@ public:
   explicit SimpleNtupler_miniAOD_noDiLep(const edm::ParameterSet&);
   ~SimpleNtupler_miniAOD_noDiLep() { delete hardInteraction; }
   void analyze(const edm::Event&, const edm::EventSetup&);
+  void endJob();
   TString replace_all(const TString& a, const TString& b, const TString& c);
 private:
   struct tree_t {
@@ -1047,11 +1048,6 @@ void SimpleNtupler_miniAOD_noDiLep::analyze(const edm::Event& event, const edm::
   }
   cut_index = cut_index+1;
 
-  for(int cutIndex = 0; cutIndex < nCuts; cutIndex++){
-    //std::cout << "nCuts " << cutIndex << " nEvents " << cutflow_study_dilep[cutIndex] << std::endl;
-  }
-
-
 
 
  std::cout << t.run << "," << t.lumi << "," << t.event <<  ","  << passTrigger << "," << atLeastOneHighPtMuon << "," << atLeastTwoHighPtMuon << "," << atLeastTwoOppositeSignHighPtMuon << "," << passDeltaR << "," << passMassCut << "," << positiveMuonTL.Pt() << "," << negativeMuonTL.Pt() <<  std::endl;
@@ -1063,5 +1059,12 @@ void SimpleNtupler_miniAOD_noDiLep::analyze(const edm::Event& event, const edm::
   //
 
 } // end SimpleNtupler_miniAOD_noDiLep::analyze
+
+void SimpleNtupler_miniAOD_noDiLep::endJob() 
+{
+  for(int cutIndex = 0; cutIndex < nCuts; cutIndex++){
+    std::cout << "nCuts " << cutIndex << " nEvents " << cutflow_study_dilep[cutIndex] << std::endl;
+  }
+}
 
 DEFINE_FWK_MODULE(SimpleNtupler_miniAOD_noDiLep);
