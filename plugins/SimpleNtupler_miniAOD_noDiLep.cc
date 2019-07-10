@@ -259,6 +259,22 @@ private:
   TH1D* NPV_cuts;
   TH1F* TH1F_cutlfow;
 
+  TH1F* TH1F_muonPt_all;
+  TH1F* TH1F_muonPt_trigg;
+  TH1F* TH1F_muonPt_one;
+  TH1F* TH1F_muonPt_two;
+  TH1F* TH1F_muonPt_oppSign;
+  TH1F* TH1F_muonPt_deltaR;
+  TH1F* TH1F_muonPt_mass;
+
+  TH1F* TH1F_muonEta_all;
+  TH1F* TH1F_muonEta_trigg;
+  TH1F* TH1F_muonEta_one;
+  TH1F* TH1F_muonEta_two;
+  TH1F* TH1F_muonEta_oppSign;
+  TH1F* TH1F_muonEta_deltaR;
+  TH1F* TH1F_muonEta_mass;
+
   const edm::InputTag mu_src;
   const edm::InputTag beamspot_src;
   const edm::InputTag met_src;
@@ -687,6 +703,22 @@ SimpleNtupler_miniAOD_noDiLep::SimpleNtupler_miniAOD_noDiLep(const edm::Paramete
 
   TH1F_cutlfow = fs->make<TH1F>("TH1F_cutlfow", "TH1F_cutlfow", 10, -.5,8.5);
 
+  TH1F_muonPt_all = fs->make<TH1F>("muonPt_all", "muonPt_all", 100, 0, 150);
+  TH1F_muonPt_trigg = fs->make<TH1F>("muonPt_trigg", "muonPt_trigg", 100, 0, 150);
+  TH1F_muonPt_one = fs->make<TH1F>("muonPt_one", "muonPt_one", 100, 0, 150);
+  TH1F_muonPt_two = fs->make<TH1F>("muonPt_two", "muonPt_two", 100, 0, 150);
+  TH1F_muonPt_oppSign = fs->make<TH1F>("muonPt_oppSign", "muonPt_oppSign", 100, 0, 150);
+  TH1F_muonPt_deltaR = fs->make<TH1F>("muonPt_deltaR", "muonPt_deltaR", 100, 0, 150);
+  TH1F_muonPt_mass = fs->make<TH1F>("muonPt_mass", "muonPt_mass", 100, 0, 150);
+
+  TH1F_muonEta_all = fs->make<TH1F>("muonEta_all", "muonEta_all", 100, -2.5,2.5);
+  TH1F_muonEta_trigg = fs->make<TH1F>("muonEta_trigg", "muonEta_trigg", 100, -2.5,2.5);
+  TH1F_muonEta_one = fs->make<TH1F>("muonEta_one", "muonEta_one", 100, -2.5,2.5);
+  TH1F_muonEta_two = fs->make<TH1F>("muonEta_two", "muonEta_two", 100, -2.5,2.5);
+  TH1F_muonEta_oppSign = fs->make<TH1F>("muonEta_oppSign", "muonEta_oppSign", 100, -2.5,2.5);
+  TH1F_muonEta_deltaR = fs->make<TH1F>("muonEta_deltaR", "muonEta_deltaR", 100, -2.5,2.5);
+  TH1F_muonEta_mass = fs->make<TH1F>("muonEta_mass", "muonEta_mass", 100, -2.5,2.5);
+
 
 }
 
@@ -903,10 +935,10 @@ void SimpleNtupler_miniAOD_noDiLep::analyze(const edm::Event& event, const edm::
     int prescale = 0;
     if (accept ==1 ) pass = true;
     ////std::cout << name << std::endl;
-    if(pass && (name.find("HLT_Mu50") !=std::string::npos )  ) {
+    if(pass && (name.find("HLT_Mu50_v") !=std::string::npos )  ) {
       passTriggerMu = true;
     }
-    if(pass && (name.find("HLT_TkMu50") !=std::string::npos )  ) {
+    if(pass && (name.find("HLT_TkMu50_v") !=std::string::npos )  ) {
       passTriggerTkMu = true;
     }
   }
@@ -930,9 +962,13 @@ void SimpleNtupler_miniAOD_noDiLep::analyze(const edm::Event& event, const edm::
   std::vector<TLorentzVector> muonTLVector = {};
   std::vector<int> muonCharge = {};
   TLorentzVector muonTL;
+  double leadingPt = -1;
+  int count = 0;
 
   for (std::vector<pat::Muon>::const_iterator itMuon = muons->begin(); itMuon != muons->end(); itMuon++) {
     ////std::cout << "muon pt " << itMuon->pt() << std::endl;
+    if(count == 0) leadingPt = itMuon->pt();
+    count = count + 1;
   
     //std::cout << itMuon->pt() << " " << itMuon->charge() << " " << itMuon->CutBasedIdGlobalHighPt << " " << itMuon->isolationR03().sumPt/ itMuon->pt() << " " << abs(itMuon->eta())  << std::endl;
     if(not passTrigger) continue;
@@ -940,12 +976,29 @@ void SimpleNtupler_miniAOD_noDiLep::analyze(const edm::Event& event, const edm::
     //muCut = "Muon_pt > 53 and Muon_highPtId > 1 and Muon_pfRelIso03_chg < 0.1 and -2.4 < Muon_eta and Muon_eta < 2.4"
     if (not (itMuon->pt() > 53)) continue;
     if (not (itMuon->CutBasedIdGlobalHighPt > 1) ) continue;
-    if (not (itMuon->isolationR03().sumPt/ itMuon->pt() < 0.10)) continue; //probably not real rel iso, i think it needs to be tracker pt
+
+
+    //old high pt id:
+   // if (not (itMuon->isGlobalMuon())) continue;
+    //if (not (itMuon->globalTrack()->hitPattern().numberOfValidMuonHits() > 0)) continue;
+    //if (not (itMuon->numberOfMatchedStations() > 1)) continue;
+    //if (not (itMuon->tunePMuonBestTrack()->ptError()/itMuon->tunePMuonBestTrack()->pt() < .3)) continue;
+    //if (not (abs(itMuon->dB()) < 2)) continue;
+    //if (not (abs(itMuon->dZ()) < 2)) continue;
+    //if (not (abs(itMuon->innerTrack()->dz(vertex->position()) < .5)) ) continue;   
+    //if (not (itMuon->globalTrack()->hitPattern().numberOfValidPixelHits() > 0)) continue;
+    //if (not (itMuon->globalTrack()->hitPattern().trackerLayersWithMeasurement() > 5)) continue;
+
+
+    if (not (itMuon->pfIsolationR03().sumChargedHadronPt/ itMuon->pt() < 0.10)) continue; //probably not real rel iso, i think it needs to be tracker pt
+ //   if (not (itMuon->isolationR03().sumPt/ itMuon->pt() < 0.10)) continue; //probably not real rel iso, i think it needs to be tracker pt
     if (not (abs(itMuon->eta()) < 2.4)) continue;
 
     muonTL.SetPtEtaPhiM(itMuon->pt(),itMuon->eta(),itMuon->phi(),.105658);
     muonTLVector.push_back( muonTL );
     muonCharge.push_back(itMuon->charge());
+
+
   }
 
   //at least one
@@ -975,7 +1028,7 @@ void SimpleNtupler_miniAOD_noDiLep::analyze(const edm::Event& event, const edm::
         positiveMuonTL.SetPtEtaPhiM(itMuon->Pt(),itMuon->Phi(),itMuon->Eta(),.105658);
       }
 
-      if (charge < 0 and positiveMuonTL.Pt() < itMuon->Pt()){
+      if (charge < 0 and negativeMuonTL.Pt() < itMuon->Pt()){
         negativeMuonTL.SetPtEtaPhiM(itMuon->Pt(),itMuon->Phi(),itMuon->Eta(),.105658);
       }
      }
@@ -1004,10 +1057,20 @@ void SimpleNtupler_miniAOD_noDiLep::analyze(const edm::Event& event, const edm::
   cut_index = cut_index+1;
   //std::cout << "Event" << std::endl;
 
+
+  for (std::vector<pat::Muon>::const_iterator itMuon = muons->begin(); itMuon != muons->end(); itMuon++) {
+    TH1F_muonPt_all->Fill(itMuon->pt());
+    TH1F_muonEta_all->Fill(itMuon->eta());
+  }
+
   if (passTrigger){
     cutflow_study_dilep[cut_index] = cutflow_study_dilep[cut_index] + 1;
     TH1F_cutlfow->Fill(cut_index);
     //std::cout << "passTrigger" << std::endl;
+    for (std::vector<pat::Muon>::const_iterator itMuon = muons->begin(); itMuon != muons->end(); itMuon++) {
+      TH1F_muonPt_trigg->Fill(itMuon->pt());
+      TH1F_muonEta_trigg->Fill(itMuon->eta());
+    }
   }
   cut_index = cut_index+1;
 
@@ -1016,6 +1079,10 @@ void SimpleNtupler_miniAOD_noDiLep::analyze(const edm::Event& event, const edm::
     cutflow_study_dilep[cut_index] = cutflow_study_dilep[cut_index] + 1;
     TH1F_cutlfow->Fill(cut_index);
     //std::cout << "oneMuon" << std::endl;
+    for (std::vector<pat::Muon>::const_iterator itMuon = muons->begin(); itMuon != muons->end(); itMuon++) {
+      TH1F_muonPt_one->Fill(itMuon->pt());
+      TH1F_muonEta_one->Fill(itMuon->eta());
+    }
   }
   cut_index = cut_index+1;
 
@@ -1024,6 +1091,10 @@ void SimpleNtupler_miniAOD_noDiLep::analyze(const edm::Event& event, const edm::
     cutflow_study_dilep[cut_index] = cutflow_study_dilep[cut_index] + 1;
     TH1F_cutlfow->Fill(cut_index);
     //std::cout << "twoMuon" << std::endl;
+    for (std::vector<pat::Muon>::const_iterator itMuon = muons->begin(); itMuon != muons->end(); itMuon++) {
+      TH1F_muonPt_two->Fill(itMuon->pt());
+      TH1F_muonEta_two->Fill(itMuon->eta());
+    }
   }
   cut_index = cut_index+1;
 
@@ -1031,6 +1102,10 @@ void SimpleNtupler_miniAOD_noDiLep::analyze(const edm::Event& event, const edm::
     cutflow_study_dilep[cut_index] = cutflow_study_dilep[cut_index] + 1;
     TH1F_cutlfow->Fill(cut_index);
     //std::cout << "oppSign" << std::endl;
+    for (std::vector<pat::Muon>::const_iterator itMuon = muons->begin(); itMuon != muons->end(); itMuon++) {
+         TH1F_muonPt_oppSign->Fill(itMuon->pt());
+         TH1F_muonEta_oppSign->Fill(itMuon->eta());
+    }
   }
   cut_index = cut_index+1;
 
@@ -1038,6 +1113,10 @@ void SimpleNtupler_miniAOD_noDiLep::analyze(const edm::Event& event, const edm::
     cutflow_study_dilep[cut_index] = cutflow_study_dilep[cut_index] + 1;
     TH1F_cutlfow->Fill(cut_index);
     //std::cout << "deltaR" << std::endl;
+    for (std::vector<pat::Muon>::const_iterator itMuon = muons->begin(); itMuon != muons->end(); itMuon++) {
+         TH1F_muonPt_deltaR->Fill(itMuon->pt());
+         TH1F_muonEta_deltaR->Fill(itMuon->eta());
+    }
   }
   cut_index = cut_index+1;
 
@@ -1045,12 +1124,21 @@ void SimpleNtupler_miniAOD_noDiLep::analyze(const edm::Event& event, const edm::
     cutflow_study_dilep[cut_index] = cutflow_study_dilep[cut_index] + 1;
     TH1F_cutlfow->Fill(cut_index);
     //std::cout << "mass" << std::endl;
+    for (std::vector<pat::Muon>::const_iterator itMuon = muons->begin(); itMuon != muons->end(); itMuon++) {
+      TH1F_muonPt_mass->Fill(itMuon->pt());
+      TH1F_muonEta_mass->Fill(itMuon->eta());
+    }
   }
   cut_index = cut_index+1;
 
 
 
- std::cout << t.run << "," << t.lumi << "," << t.event <<  ","  << passTrigger << "," << atLeastOneHighPtMuon << "," << atLeastTwoHighPtMuon << "," << atLeastTwoOppositeSignHighPtMuon << "," << passDeltaR << "," << passMassCut << "," << positiveMuonTL.Pt() << "," << negativeMuonTL.Pt() <<  std::endl;
+
+
+
+  if (1==2){
+  std::cout << t.run << "," << t.lumi << "," << t.event <<  ","  << passTrigger << "," << atLeastOneHighPtMuon << "," << atLeastTwoHighPtMuon << "," << atLeastTwoOppositeSignHighPtMuon << "," << passDeltaR << "," << passMassCut << "," << positiveMuonTL.Pt() << "," << negativeMuonTL.Pt() << "," << leadingPt <<  std::endl;
+ }
 
  tree->Fill();
   // 
@@ -1068,3 +1156,5 @@ void SimpleNtupler_miniAOD_noDiLep::endJob()
 }
 
 DEFINE_FWK_MODULE(SimpleNtupler_miniAOD_noDiLep);
+
+
